@@ -186,8 +186,12 @@ lich_col_rf_ranger<-function(x)
 lich_col_rf_run<-lapply(1:length(resp_names),lich_col_rf_ranger)
 
 lich_col_rf_run[[1]]$r.squared
-lich_col_df_stat<-lapply(1:length(lich_col_rf_run), function(x) {lich_col_rf_run[[x]]$r.squared}) %>% cbind(resp_full_names)
+lich_col_df_stat<-lapply(1:length(lich_col_rf_run), function(x) {lich_col_rf_run[[x]]$r.squared}) %>% 
+  unlist() %>%
+  cbind(resp_full_names) %>% 
+  as.data.frame()
 
+write.csv(lich_col_df_stat,"./Output/rf_stats_lichen_color_groups_v_CCDC.csv")
 
 ## Find  and remove intercorrelated variables and rerun ranger random forests      
 corrMatrix <- eval(parse(text =input$lich_data[1])) %>% 
