@@ -1,0 +1,2 @@
+"resp" "resp_full_names" "rsq" "error" "obs_vs_pred_GEE"
+"1" "lich_fr" 
