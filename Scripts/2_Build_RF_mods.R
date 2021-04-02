@@ -1,13 +1,7 @@
 
-install_or_load_pack <- function(pack){
-  create.pkg <- pack[!(pack %in% installed.packages()[, "Package"])]
-  if (length(create.pkg))
-    install.packages(create.pkg, dependencies = TRUE)
-  sapply(pack, require, character.only = TRUE)
-  
-  #I know I should be using purr here, but this is before the Tidyverse is loaded. I know you Tidyverse trend setters will have me here.
-  
-}
+set.seed(1234)
+source("./Functions/Helpers.R")
+
 ##Load libraries
 install_or_load_pack(c("tidyverse","caret","randomForest","hexbin","pdp","viridis","ModelMetrics","ranger","Metrics"))
 
@@ -23,23 +17,10 @@ install_or_load_pack(c("tidyverse","caret","randomForest","hexbin","pdp","viridi
 #assign(gsub(" ","",substr(files[1], 1, perpos-1)), read.csv(paste(path,files[1],sep="")))
 
 ##Old preds
-#read_csv_batch<-function(path) 
-#{
-#  files <- list.files(path=path, pattern="*.csv")
-#  for(file in files)
-#  {
-#    perpos <- which(strsplit(file, "")[[1]]==".")
-#    ##Line below doesn't create an object for every file read in. Why?
-#    assign(gsub(" ","",substr(file, 1, perpos-1)), read.csv(paste(path,file,sep="")))
-#    print(file)
-#  }
-#}
-#
 #read_csv_batch(path)
 #
 #list.files(path) #These are the input files
 ## eg. "pred_rf_blk_l8_tot_20190831_60pred_oob.csv", "pred_rf_brn_l8_tot_20190831_60pred_oob.csv"
-CCDC <- read_csv("Data/lichen_plots_normalized_20210112d_wPreds_byYear.csv")
 
 ## List of target responses for each output file from GEE
 resp_names<-c('lich_fr','lich_fo','lich_m' ,'lich_cr','lich_tot','drk_l4_tot'  ,'lgt_l4_tot'  ,'yel_l4_tot'  ,'drk_l3_tot'  ,'lgt_l3_tot'  ,'drk_l2_tot'  ,'lgt_l2_tot'  ,
@@ -50,49 +31,17 @@ resp_names<-c('lich_fr','lich_fo','lich_m' ,'lich_cr','lich_tot','drk_l4_tot'  ,
 resp_full_names<-c('Fruticose lichen cover'     ,'Foliose lichen cover'     ,'Multiform lichen cover'      ,'Crustose lichen cover'     ,'Total lichen cover'    ,
                    'Dark (4 category) lichen cover'  ,'Light (4 category) lichen cover'  ,'Yellow (4 category) lichen cover'  ,'Dark (3 category) lichen cover'  ,'Light (3 category) lichen cover'  ,'Dark (2 category) lichen cover'  ,'Light (2 category) lichen cover'  ,'Black (8 category) lichen cover'  ,'Brown (8 category) lichen cover'  ,'Gray (8 category) lichen cover'  ,'Gray-green (8 category) lichen cover'  ,'Green (8 category) lichen cover'  ,'Orange (8 category) lichen cover'  ,'White (8 category) lichen cover'  ,'Yellow (8 category) lichen cover', 'Lichen volume')
 
+pred_names<-CCDC %>% dplyr::select(-not_preds) %>% colnames() #%>% as.character()
+
 #resp_full_names<-c('Fruticose lichen cover'     ,'Foliose lichen cover'        ,'Total lichen cover'    ,
 #  'Dark (4 category) lichen cover'  ,'Light (4 category) lichen cover'  ,'Yellow (4 category) lichen cover'  ,'Dark (3 category) lichen cover'  ,'Light (3 category) lichen cover'  ,'Dark (2 category) lichen cover'  ,'Light (2 category) lichen cover'  , 'Brown (8 category) lichen cover'  ,'Gray (8 category) lichen cover'  ,'White (8 category) lichen cover'  ,'Yellow (8 category) lichen cover')
 #    #small test
 #    #resp_full_names<-'Total lichen cover'
 ##For each object, generate list of inputs for analysis and plotting following syntax needed for those functions
 
-Make_Inputs<- function(lich) 
-{ ## Function lists of GEE output objects
-  fnc1<- function(x) {paste("pred_rf_",x,"_20200312_74pred_oob_500trees_resamp", sep="")}
-  #fnc1(resp_names)
-  #fnc1<- function(x) {paste("pred_rf_",x,"_20200412_74pred_oob_500trees", sep="")}
-  ## Apply function that creates the list of objects
-  lich_data<- unlist(lapply(lich, fnc1))
-    #length(unlist(lapply(resp_names, fnc1))) #21 elements
-  #return(lich_data)
-  ## Function lists predicted response variable names
-  fnc2<-function(y) {paste(y,"_pred", sep="")}
-  ## Apply function to make list of predicted response variables
-  lich_pred <- unlist(lapply(lich, fnc2))
-    #length(unlist(lapply(resp_names, fnc2))) #21 elements
-  lich_resp<-lich
-  ## Make formulas to compare observed vs predicted vaoues
-  lich_mods<- paste(lich,lich_pred, sep="~")
-    #length(paste(resp_names,unlist(lapply(resp_names, fnc2)), sep="~")) #21 elements
-  ## Turn strings into formula object
-  lich_form<-lapply(lich_mods, as.formula)
-    #lapply(paste(resp_names,unlist(lapply(resp_names, fnc2)), sep="~"), as.formula) #21 elements
-  ## Lichen hexbin for obs vs pred
-  ##This pastes the equation for hexbin          
-  #fnc3<- function(z) {paste("pred_rf_", z, "_20200412_74pred_oob_500trees$", z, "~pred_rf_", z, "_20200412_74pred_oob_500trees$", z, "_pred", sep="")} 
-  #hex_form<-lapply(lich, fnc3) %>% unlist()
-  ## This makes the hexbin plots for each group
-  #fnc4<-function(z) {hexbin(eval(parse(text =hex_form[z])))}#, xbins=10)}
-  #hex_lich<-lapply(1:length(resp_names), fnc4)
-  ## Combine formulas, observed and predicted names and data set namtes
-  fnc5<-function(a) {paste(resp_names[a],lich_pred[a], sep=",")}
-  lich_aes<-lapply(1:length(lich), fnc5)
-  lich_out<-cbind(lich, lich_pred, lich_mods, lich_data, lich_form, lich_aes) %>% as.data.frame()#, lich_form) %>% as.data.frame()
-  ##Save output for plotting
-  return(lich_out)
-}
-input<-Make_Inputs(resp_names)
-input %>% View()
+#Old input function call
+#input<-Make_Inputs(resp_names)
+#input %>% View()
 
 
 ##Make and observed vs predicted graph for each lichen color group
@@ -189,25 +138,17 @@ pdf("obs_vs_pred_hexbin_all.pdf")
 lapply(1:length(resp_names), obs_vs_pred)
 dev.off()
 
-
-#This only make a list of the colnames from one color group data frame which includes columns that aren't predictors
-#pred<-c ("blue_p010","blue_p025","blue_p050","blue_p075","blue_p090","evi_p010","evi_p025","evi_p050","evi_p075","evi_p090",
-#         "green_p010","green_p025","green_p050","green_p075","green_p090","nbr_p010","nbr_p025","nbr_p050","nbr_p075",
-#         "nbr_p090","ndmi_p010","ndmi_p025","ndmi_p050","ndmi_p075","ndmi_p090","ndsi_p010","ndsi_p025","ndsi_p050",
-#         "ndsi_p075","ndsi_p090","ndvi_p010","ndvi_p025","ndvi_p050","ndvi_p075","ndvi_p090","ndwi_p010","ndwi_p025",
-#         "ndwi_p050","ndwi_p075","ndwi_p090","nir_p010","nir_p025","nir_p050","nir_p075","nir_p090","red_p010",
-#         "red_p025","red_p050","red_p075","red_p090","swir1_p010","swir1_p025","swir1_p050","swir1_p075","swir1_p090",
-#         "swir2_p010","swir2_p025","swir2_p050","swir2_p075","swir2_p090","randSel")
-pred<-c("aet"              ,"blue_p010"       ,"blue_p025"       ,"blue_p050"       ,"blue_p075"       ,"blue_p090"       ,"def"             ,"evi_p010"       
-        ,"evi_p025"        ,"evi_p050"        ,"evi_p075"        ,"evi_p090"        ,"green_p010"     ,"green_p025"      ,"green_p050"      ,"green_p075"      
-        ,"green_p090"       ,"nbr_p010"        ,"nbr_p025"        ,"nbr_p050"        ,"nbr_p075"        ,"nbr_p090"        ,"ndmi_p010"      
-        ,"ndmi_p025"       ,"ndmi_p050"       ,"ndmi_p075"       ,"ndmi_p090"       ,"ndsi_p010"      ,"ndsi_p025"       ,"ndsi_p050"       ,"ndsi_p075"       
-        ,"ndsi_p090"       ,"ndvi_p010"       ,"ndvi_p025"       ,"ndvi_p050"       ,"ndvi_p075"       ,"ndvi_p090"       ,"ndwi_p010"      
-        ,"ndwi_p025"       ,"ndwi_p050"       ,"ndwi_p075"       ,"ndwi_p090"       ,"nir_p010"       ,"nir_p025"        ,"nir_p050"        ,"nir_p075"        
-        ,"nir_p090"        ,"pdsi"            ,"pet"             ,"pr"              ,"randSel"         ,"red_p010"        ,"red_p025"        ,"red_p050"        
-        ,"red_p075"        ,"red_p090"        ,"ro"              ,"soil"            ,"srad"            ,"swe"             ,"swir1_p010"      ,"swir1_p025"     
-        ,"swir1_p050"      ,"swir1_p075"      ,"swir1_p090"      ,"swir2_p010"      ,"swir2_p025"     
-        ,"swir2_p050"      ,"swir2_p075"      ,"swir2_p090"      ,"tmmn"            ,"tmmx"           ,"vap"             ,"vpd"             ,"vs"              )
+#Old list of preds
+#pred<-c("aet"              ,"blue_p010"       ,"blue_p025"       ,"blue_p050"       ,"blue_p075"       ,"blue_p090"       ,"def"             ,"evi_p010"       
+#        ,"evi_p025"        ,"evi_p050"        ,"evi_p075"        ,"evi_p090"        ,"green_p010"     ,"green_p025"      ,"green_p050"      ,"green_p075"      
+#        ,"green_p090"       ,"nbr_p010"        ,"nbr_p025"        ,"nbr_p050"        ,"nbr_p075"        ,"nbr_p090"        ,"ndmi_p010"      
+#        ,"ndmi_p025"       ,"ndmi_p050"       ,"ndmi_p075"       ,"ndmi_p090"       ,"ndsi_p010"      ,"ndsi_p025"       ,"ndsi_p050"       ,"ndsi_p075"       
+#        ,"ndsi_p090"       ,"ndvi_p010"       ,"ndvi_p025"       ,"ndvi_p050"       ,"ndvi_p075"       ,"ndvi_p090"       ,"ndwi_p010"      
+#        ,"ndwi_p025"       ,"ndwi_p050"       ,"ndwi_p075"       ,"ndwi_p090"       ,"nir_p010"       ,"nir_p025"        ,"nir_p050"        ,"nir_p075"        
+#        ,"nir_p090"        ,"pdsi"            ,"pet"             ,"pr"              ,"randSel"         ,"red_p010"        ,"red_p025"        ,"red_p050"        
+#        ,"red_p075"        ,"red_p090"        ,"ro"              ,"soil"            ,"srad"            ,"swe"             ,"swir1_p010"      ,"swir1_p025"     
+#        ,"swir1_p050"      ,"swir1_p075"      ,"swir1_p090"      ,"swir2_p010"      ,"swir2_p025"     
+#        ,"swir2_p050"      ,"swir2_p075"      ,"swir2_p090"      ,"tmmn"            ,"tmmx"           ,"vap"             ,"vpd"             ,"vs"              )
 ## Make models using all preds
 ## Test out selecting just one response variable, adding it to the predictor object
 ## Unit test passes
@@ -223,23 +164,30 @@ assign(paste("rf_",resp_names[21], sep=""), ranger(eval(parse(text =paste(input$
 
 lich_col_rf_ranger<-function(x)
 {
-  ##assign(paste("rf_dummest_",resp_names[x], sep=""), randomForest(eval(parse(text =lich_rf_formula[x])), data=train_data, localImp = TRUE, ntree=2000)) 
-  #input$lich_data[x]
-  #resp_names[x]
-  #lich_rf_formula[x]
+  #NEW RF
+  temp_df<- lich_vol_df_train %>% filter(randSel==0)
+  temp_resp<- temp_df %>% dplyr::select(resp_names[x]) #%>% colnames()
+  temp_pred<- temp_df %>% dplyr::select(pred_names) #%>% dim()
+  temp_df_rf<-cbind(temp_resp, temp_pred)
+  assign(paste("rf_",resp_names[x], sep=""), ranger(eval(parse(text =paste(resp_names[x],"~.", sep=""))), data=temp_df_rf, local.importance =TRUE, num.trees =20000, importance = "impurity_corrected" )) 
   
-  train_data_rf<-eval(parse(text =input$lich_data[x])) %>% 
-    dplyr::select(pred,resp_names[x]) %>% 
-    subset(randSel<0.8) %>% 
-    dplyr::select(-randSel);
-  #str(train_data_rf) #This runs
-  #assign(paste("rf_",resp_names[x], sep=""), randomForest(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, localImp = TRUE, ntree=5000)) 
-  
-  assign(paste("rf_",resp_names[x], sep=""), ranger(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, local.importance =TRUE, num.trees =15000, importance = "impurity_corrected")) 
+  #OLD RF
+  #train_data_rf<-eval(parse(text =input$lich_data[x])) %>% 
+  #  dplyr::select(pred,resp_names[x]) %>% 
+  #  subset(randSel<0.8) %>% 
+  #  dplyr::select(-randSel);
+  ##str(train_data_rf) #This runs
+  ##assign(paste("rf_",resp_names[x], sep=""), randomForest(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, localImp = TRUE, ntree=5000)) 
+  #
+  #assign(paste("rf_",resp_names[x], sep=""), ranger(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, local.importance =TRUE, num.trees =15000, importance = "impurity_corrected")) 
   
 }
 ## Apply function 
 lich_col_rf_run<-lapply(1:length(resp_names),lich_col_rf_ranger)
+
+lich_col_rf_run[[1]]$r.squared
+lich_col_df_stat<-lapply(1:length(lich_col_rf_run), function(x) {lich_col_rf_run[[x]]$r.squared}) %>% cbind(resp_full_names)
+
 
 ## Find  and remove intercorrelated variables and rerun ranger random forests      
 corrMatrix <- eval(parse(text =input$lich_data[1])) %>% 

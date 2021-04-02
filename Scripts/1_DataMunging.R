@@ -12,43 +12,75 @@ require(sf)
 ## Function slightly modified from Chris Fees response here https://stackoverflow.com/questions/11433432/how-to-import-multiple-csv-files-at-once/21589176#21589176
 
 path = "/Users/peternelson 1/Documents/UMFK/Grants/NPS WAH/Data/2018/GEE_output/20200309/";
+wd = getwd()
 list.files(path)
-read_csv_batch<-function(path) 
-{
-  files <- list.files(path=path, pattern="*.csv")
-  for(file in files)
-  {
-    perpos <- which(strsplit(file, "")[[1]]==".")
-    assign(
-      gsub(" ","",substr(file, 1, perpos-1)), 
-      read.csv(paste(path,file,sep="")))
-    print(file)
-  }
-}
+source("./Functions/Helpers.R")
 
-read_csv_batch(path)
+##Load lichen cover by color group from nasa-veg-data-ingest-r repo 
+##maintained by Macander on Gitlab
+##
+WAH_lich<-read_csv("/Users/peternelson 1/Documents/UMFK/Grants/NASA_ABOVE/Data/2018/Git/nasa-veg-data-ingest-r/training_csv/ARCN_FIA_WGS84_20191026.csv")
+#432 rows of different lichen cover measures
 
-list.files(path)
+#Old way to read in preds
+#read_csv_batch(path)
+#list.files(path)
 
+##Old predictors
 ## Read in tabular data and clean up
 ##Remote system time
-rf_lich_oob<-pred_rf_lich_tot_20200307_74pred_oob_1000trees[,-1]
+#rf_lich_oob<-pred_rf_lich_tot_20200307_74pred_oob_1000trees[,-1]
 #rf_lich_oob<-pred_rf_yel_l4_tot_20190831_60pred_oob[,-1]
 
-#Read in data
-GAAR_ENV<-read.csv("/Users/peternelson 1/Documents/UMFK/Grants/NPS WAH/Data/2018/GAAR_Plots.csv", header=T, sep=",", stringsAsFactors = F)
-XY_ENV<-read.csv("/Users/peternelson 1/Documents/UMFK/Grants/NPS WAH/Data/2018/XYEnvironmental_Data.csv", sep=",", header=T, stringsAsFactors = F)
-WAH_ENV<-read.table("/Users/peternelson 1/Documents/UMFK/Grants/NPS WAH/Data/2018/ENV_ARCN_Apr5_2017.txt", header=T, sep=",", stringsAsFactors = F)
+##New predictors: Load new preds from CCDC mods of Landsat reflectance and other env preds
+##Source of preds is GEE script
+#https://code.earthengine.google.com/bb4553a4ea95309d750db6e565211254?asset=users%2Fmmacander%2Fabove_mapping%2Fmodeling_202101%2Flichen_plots_normalized_20210112d_wPreds_byYear
 
-Env<-read.table("ENV_ARCN_June4_2019.txt",sep=",", header=T, stringsAsFactors = F)
+CCDC <- read_csv("Data/lichen_plots_normalized_20210112d_wPreds_byYear.csv")
+                          
+not_preds<-c("system:index"
+,"datasetId"                                 
+,"landsatCcdcMeta_nBreaks"                   
+,"landsatCcdcMeta_nextSegment_changeProb"    
+,"landsatCcdcMeta_nextSegment_numObs"        
+,"landsatCcdcMeta_nextSegment_tBreak"        
+,"landsatCcdcMeta_nextSegment_tEnd"          
+,"landsatCcdcMeta_nextSegment_tStart"        
+,"landsatCcdcMeta_previousSegment_changeProb"
+,"landsatCcdcMeta_previousSegment_numObs"    
+,"landsatCcdcMeta_previousSegment_tBreak"    
+,"landsatCcdcMeta_previousSegment_tEnd"      
+,"landsatCcdcMeta_previousSegment_tStart"    
+,"light_lichen_cover"                        
+,"light_lichen_cover_i"                      
+,"model_group"                               
+,"orig_light_lichen_cover"                   
+,"plotId"                                    
+,"poly_uid"                                  
+,"sample_year" 
+,"veg_total_cover"
+,".geo")    
+
+
+#Read in the old data
+GAAR_ENV<-read.csv(paste(wd,"/Data/Old/","GAAR_Plots.csv",sep=""), header=TRUE, sep=",", stringsAsFactors = FALSE)
+#79 rows of env data
+XY_ENV<-read.csv(paste(wd,"/Data/Old/","XYEnvironmental_Data.csv", sep=""), sep=",", header=TRUE, stringsAsFactors = FALSE)
+#446 rows of env data
+WAH_ENV<-read.table(paste(wd,"/Data/Old/","ENV_ARCN_Apr5_2017.txt", sep=""), header=TRUE, sep=",", stringsAsFactors = FALSE)
+Full_Comm<-read.csv(paste(wd,"/Data/","full_community_14Jul20.csv", sep=""), sep=",", header=TRUE, stringsAsFactors = FALSE)
+#402 rows of env data
+Env<-read.table(paste(wd,"/Data/Old/","ENV_ARCN_June4_2019.txt", sep=""),sep=",", header=TRUE, stringsAsFactors = F) 
+Env<- Env %>% dplyr::select(plot, colnames(Full_Comm[,2:11]))
+#402 rows of env data
 
 #Find plots not in list of ARCN FIA plot used in the lichen depth analysis
 #WAH_ENV %>% dplyr::select(plot) %>% anti_join(GAAR_ENV, by=c("plot"="Veg_Plot")) %>% anti_join(XY_ENV, by="plot") %>% View()
-Env %>% 
-  dplyr::select(plot) %>% 
-  anti_join(GAAR_ENV, by=c("plot"="Veg_Plot")) %>% 
-  anti_join(XY_ENV, by="plot") %>% 
-  View()
+#Env %>% 
+#  dplyr::select(plot) %>% 
+#  anti_join(GAAR_ENV, by=c("plot"="Veg_Plot")) %>% 
+#  anti_join(XY_ENV, by="plot") %>% 
+#  View()
 
 #Change the names of the plots to match those from GAAR and the rest of ARCN
 #WAH_ENV$plot<-ifelse(WAH_ENV$plot=="6L "       ,"6L",WAH_ENV$plot);
@@ -88,100 +120,83 @@ Env$plot<-ifelse(Env$plot=="JMIXED1"   ,"JMixed1",Env$plot);
 #tmp3$plot<-ifelse(tmp3$plot=="Jpalisad","JPalisad",tmp3$plot);
 #tmp3$plot<-ifelse(tmp3$plot=="Lowerc88","Lowrc88",tmp3$plot);
 
-preds<-rf_lich_oob %>%
-dplyr::select(
--lich_fr   
-,-lich_fo   
-,-lich_m    
-,-lich_cr   
-#,-lich_tot  
-,-drk_l4_tot
-,-lgt_l4_tot
-,yel_l4_tot
-,-drk_l3_tot
-,-lgt_l3_tot
-,-drk_l2_tot
-,-lgt_l2_tot
-,-blk_l8_tot
-,-brn_l8_tot
-,-gry_l8_tot
-,-grg_l8_tot
-,-grn_l8_tot
-,-orn_l8_tot
-,-wht_l8_tot
-,-yel_l8_tot 
-,-hdatum
-,lat_gee
-,-lich_tot_pred
-,long_gee
-,-model_grp
-,-propertyNames
-, randSel
-,-samp_date
-,-samp_year
-,-src_data
-,-yel_l4_tot
-,-".geo") # %>% dim() #[1] 432  79
+veg_meas<-Full_Comm %>% 
+  inner_join(Env, by=c(colnames(Full_Comm[,2:11])), keep=FALSE) %>% #colnames()
+  dplyr::select(plot, AdjHeight) %>%
+  inner_join(WAH_lich, by=c("plot"="plot_id"))# %>% colnames()
+#New preds
+preds<-CCDC %>% dplyr::select(-not_preds, plotId)  #%>% colnames()
+##Old preds
+#preds<-rf_lich_oob %>%
+#dplyr::select(#-lich_fr   #,-lich_fo   #,-lich_m    #,-lich_cr   ##,-lich_tot  #,-drk_l4_tot#,-lgt_l4_tot#,yel_l4_tot#,-drk_l3_tot#,-lgt_l3_tot
+#,-drk_l2_tot#,-lgt_l2_tot#,-blk_l8_tot#,-brn_l8_tot#,-gry_l8_tot#,-grg_l8_tot#,-grn_l8_tot#,-orn_l8_tot#,-wht_l8_tot#,-yel_l8_tot #,-hdatum
+#,lat_gee#,-lich_tot_pred#,long_gee#,-model_grp#,-propertyNames#, randSel#,-samp_date#,-samp_year#,-src_data#,-yel_l4_tot#,-".geo") # %>% dim() #[1] 432  79
+#
 
-colnames(preds)
-preds_lich_tot<-rf_lich_oob %>% dplyr::select(plot_id, lich_tot, randSel)
-#dim(preds_lich_tot) #[1] 432  79
-colnames(Env[1:17])
-colnames(Env)
-Env_preds<-Env %>%
-  dplyr::select(	
-    plot
-    #,tas_decadal_mean
-    #,logs_cru
-    #,mu_ALT
-    #,mu_perma
-    #,pr_decadal_mean
-    ,dem_1km
-    #,slope_1km
-    ,FIREYEAR
-    ,PROBABILIT
-    #,vap_05_1990_1999
-    #,vap_08_1990_1999
-    #,rsds_05_1990_1999_AkAlbers
-    #,rsds_08_1990_1999_AkAlbers
-    ,AdjHeight
-  )
 
-Env_preds$FIREYEAR<-ifelse(is.na(Env_preds$FIREYEAR )==T,0,Env_preds$FIREYEAR)
-Env_preds$PROBABILIT<-ifelse(is.na(Env_preds$PROBABILIT)==T,0,Env_preds$PROBABILIT)
+#preds_lich_tot<-rf_lich_oob %>% dplyr::select(plot_id, lich_tot, randSel)
+
+##Old env preds
+#Env_preds<-Env %>%
+#  dplyr::select(	
+#    plot
+#    #,tas_decadal_mean
+#    #,logs_cru
+#    #,mu_ALT
+#    #,mu_perma
+#    #,pr_decadal_mean
+#    ,dem_1km
+#    #,slope_1km
+#    ,FIREYEAR
+#    ,PROBABILIT
+#    #,vap_05_1990_1999
+#    #,vap_08_1990_1999
+#    #,rsds_05_1990_1999_AkAlbers
+#    #,rsds_08_1990_1999_AkAlbers
+#    ,AdjHeight
+#  )
+#
+#Env_preds$FIREYEAR<-ifelse(is.na(Env_preds$FIREYEAR )==T,0,Env_preds$FIREYEAR)
+#Env_preds$PROBABILIT<-ifelse(is.na(Env_preds$PROBABILIT)==T,0,Env_preds$PROBABILIT)
 
 #Check stuff
 #Env_preds %>% anti_join(preds, by=c("plot"="plot_id")) %>% dplyr::select(plot) %>% View()
 #Env_preds %>% right_join(preds, by=c("plot"="plot_id")) %>% colnames() #dplyr::select(plot, plot_id) # %>% View()
 #preds %>% full_join(Env_preds, by=c("plot_id"="plot")) %>% dplyr::select(plot_id) %>% View()
 #preds %>% dplyr::select("plot_id") %>% View()
-nrow(Env)
-lich_vol_df<-Env_preds %>% left_join(preds, by=c("plot"="plot_id"))  #%>% nrow() #dplyr::select(plot) %>% View()
-dim(lich_vol_df) #[1] 402  83
-#View(lich_vol_df)
-#range(lich_vol_df$lich_tot)
-#hist(lich_vol_df$lich_tot)
 
-#range(lich_vol_df$AdjHeight)
-#hist(lich_vol_df$AdjHeight)
+##Old
+#lich_vol_df<-Env_preds %>% left_join(preds, by=c("plot"="plot_id"))  #%>% nrow() #dplyr::select(plot) %>% View()
 
-range(as.numeric(lich_vol_df$AdjHeight*lich_vol_df$lich_tot))
-tst<-(lich_vol_df$AdjHeight*lich_vol_df$lich_tot*((pi*(34.7*100))^2))/1000000
-hist(lich_vol_df$AdjHeight)
-hist(lich_vol_df$lich_tot)
-hist(tst)
-plot(tst,lich_vol_df$lich_vol)
+#New
+lich_vol_df<-preds %>% inner_join(veg_meas, by=c("plotId"="plot")) #%>% colnames()
+lich_vol_df<-lich_vol_df %>% filter(is.na(AdjHeight)==FALSE) #%>% nrow()
+  
+#Make lichen volume columns
 lich_vol_df$lich_vol<-lich_vol_df$AdjHeight*lich_vol_df$lich_tot
-dim(lich_vol_df) #[1] 393  84 
 
-range(lich_vol_df$lich_vol)
-hist(lich_vol_df$lich_vol)
-lich_vol_df<-subset(lich_vol_df, is.na(lat_gee)==F) #%>% nrow()#View() #Why are coords 
-dim(lich_vol_df) #[1] 402  84
-
-hist(lich_vol_df$lich_vol)
-
-##  Make a shapefile
+#Add random nmber of 80/20 split
+  rand_col<-sample(seq_len(nrow(lich_vol_df)),size = floor(0.75*nrow(lich_vol_df)))
+  lich_vol_df_cal<-lich_vol_df[rand_col,]
+  lich_vol_df_val<-lich_vol_df[-rand_col,]
+  lich_vol_df_cal$randSel<-0
+  lich_vol_df_val$randSel<-1
+  dim(lich_vol_df_val)
+  dim(lich_vol_df_cal)
+  
+  lich_vol_df_train<-rbind(lich_vol_df_val,lich_vol_df_cal) %>% as.data.frame()
+  hist(lich_vol_df_train$randSel)
+  
+  
+  
+  
+  
+  
+  
+  
+###OLD SPATIAL  
+  
+  ##  Make a shapefile
 arcn_gis_pts_lichvol <-lich_vol_df
   #subset(lich_vol_df, is.na(lat_gee)==T) %>% length()
 
