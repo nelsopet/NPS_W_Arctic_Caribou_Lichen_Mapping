@@ -188,53 +188,48 @@ lich_vol_df$lich_vol<-lich_vol_df$AdjHeight*lich_vol_df$lich_tot
   lich_vol_df_train<-rbind(lich_vol_df_val,lich_vol_df_cal) %>% as.data.frame()
   hist(lich_vol_df_train$randSel)
   
-  
-  
-  
-  
-  
-  
+  write_csv(lich_vol_df_train, paste("./Output/","lich_vol_df_train.csv"))
   
 ###OLD SPATIAL  
-  
-  ##  Make a shapefile
-arcn_gis_pts_lichvol <-lich_vol_df
-  #subset(lich_vol_df, is.na(lat_gee)==T) %>% length()
-
-arcn_gis_pts_lichvol<-st_as_sf(
-  lich_vol_df,
-    coords = c("long_gee","lat_gee"),
-    crs = 4326,
-    agr = "constant"
-  )
-plot(arcn_gis_pts_lichvol)
-st_write(arcn_gis_pts_lichvol,
-         dsn = paste0(
-           "ARCN_FIA_LICHVOL_WGS84",
-           "_",
-           format(Sys.time(), "%Y%m%d"),
-           ".shp",
-           sep = ""
-         ))
-
-## Project shapefile
-arcn_gis_pts_lichvol_prj <- arcn_gis_pts_lichvol %>% st_transform(32606)
-
-## Buffer plot center by 35m
-arcn_gis_pts_lichvol_prj_out <- arcn_gis_pts_lichvol_prj %>% st_buffer(35) %>% st_transform(4326)
-
-## Write shapefile to local drive
-st_write(
-  arcn_gis_pts_lichvol_prj_out,
-  dsn = paste0(
-    "ARCN_FIA_LICHVOL_WGS84_BUFF35M",
-    "_",
-    format(Sys.time(), "%Y%m%d"),
-    ".shp",
-    sep = ""
-  )
-)
-
+#  
+#  ##  Make a shapefile
+#arcn_gis_pts_lichvol <-lich_vol_df
+#  #subset(lich_vol_df, is.na(lat_gee)==T) %>% length()
+#
+#arcn_gis_pts_lichvol<-st_as_sf(
+#  lich_vol_df,
+#    coords = c("long_gee","lat_gee"),
+#    crs = 4326,
+#    agr = "constant"
+#  )
+#plot(arcn_gis_pts_lichvol)
+#st_write(arcn_gis_pts_lichvol,
+#         dsn = paste0(
+#           "ARCN_FIA_LICHVOL_WGS84",
+#           "_",
+#           format(Sys.time(), "%Y%m%d"),
+#           ".shp",
+#           sep = ""
+#         ))
+#
+### Project shapefile
+#arcn_gis_pts_lichvol_prj <- arcn_gis_pts_lichvol %>% st_transform(32606)
+#
+### Buffer plot center by 35m
+#arcn_gis_pts_lichvol_prj_out <- arcn_gis_pts_lichvol_prj %>% st_buffer(35) %>% st_transform(4326)
+#
+### Write shapefile to local drive
+#st_write(
+#  arcn_gis_pts_lichvol_prj_out,
+#  dsn = paste0(
+#    "ARCN_FIA_LICHVOL_WGS84_BUFF35M",
+#    "_",
+#    format(Sys.time(), "%Y%m%d"),
+#    ".shp",
+#    sep = ""
+#  )
+#)
+#
 # Find  and remove intercorrelated variables and rerun ranger random forests      
 corrMatrix <- lich_vol_df %>% 
   dplyr::select(-plot, -randSel, -AdjHeight, -lich_tot, -lich_vol, -FIREYEAR, -PROBABILIT) %>%

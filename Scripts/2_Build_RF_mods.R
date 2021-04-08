@@ -209,11 +209,12 @@ valid_pred_input<-lich_col_rf_run[[1]]$predictions %>%
   #unlist(recursive=FALSE) %>% 
   as.data.frame() #%>% 
 obs_input_plot<-cbind(obs_input,valid_pred_input) %>% rename(obs = resp_names[1], pred = ".")
-
+#plot(obs_input_plot$obs, obs_input_plot$pred)
 ggplot(data=obs_input_plot, mapping=aes(x=resp_names[1],y=pred))+#, xmax=100, ymax=100))+
-  geom_hex(bins=15, aes(fill = stat(log(count))))+
+  geom_abline()
+  #geom_hex(bins=15, aes(fill = stat(log(count))))+
   #labs(x=input$lich[x], y=input$lich_pred[x])+
-  labs(x=resp_full_names[1], y=paste("Predicted",resp_full_names[1]), subtitle=paste("R2=",cor_valid_out[x,2]), title = paste(resp_full_names[x],"Ranger observed vs predicted"))+
+  labs(x=resp_full_names[1], y=paste("Predicted",resp_full_names[1]), subtitle=paste("R2=",cor_valid_out[1,2]), title = paste(resp_full_names[1],"Ranger observed vs predicted"))+
   #theme_minimal()+
   theme(panel.background = element_blank())+
   geom_abline(aes(slope=1,intercept=0))+
@@ -237,7 +238,7 @@ valid_pred_input<-lich_col_rf_run[[x]]$predictions %>%
   #unlist(recursive=FALSE) %>% 
   as.data.frame() #%>% 
 obs_input_plot<-cbind(obs_input,valid_pred_input) %>% rename(obs = resp_names[x], pred = ".")
-obs_vs_pred_plot<-ggplot(data=obs_input_plot, mapping=aes(x=resp_names[x],y=pred))+#, xmax=100, ymax=100))+
+obs_vs_pred_plot<-ggplot(data=obs_input_plot, mapping=aes(x=obs,y=pred))+#, xmax=100, ymax=100))+
   geom_hex(bins=15, aes(fill = stat(log(count))))+
   #labs(x=input$lich[x], y=input$lich_pred[x])+
   labs(x=resp_full_names[x], y=paste("Predicted",resp_full_names[x]), subtitle=paste("R2=",cor_valid_out[x,2]), title = paste(resp_full_names[x],"Ranger observed vs predicted"))+
@@ -394,19 +395,36 @@ tst$prediction.error
 tst$r.squared
 
 ##Assess model accuracy by predicting validation subset
+
+##NEW
 lich_col_rf_pred<- function(x) 
 {
-  validation_data_rf<-eval(parse(text =input$lich_data[x])) %>% 
-    dplyr::select(pred,resp_names[x]) %>% 
-    subset(randSel>0.8) %>% 
-    #dim(validation_data_rf) #79 76 rows cols
-    dplyr::select(-randSel)
+  validation_data_rf<-lich_vol_df_train %>% 
+    subset(randSel>0.8) %>%
+    dplyr::select(pred_names) #%>%
+    
   assign(paste("rf_pred",resp_names[x], sep=""), predict(lich_col_rf_run[x], data=validation_data_rf)) 
   #cor(lich_col_rf_pred_run[x],)
 }
 
+# Make a collected output of randomForest models
+
+
+##OLD
+#lich_col_rf_pred<- function(x) 
+#{
+#  validation_data_rf<-eval(parse(text =input$lich_data[x])) %>% 
+#    dplyr::select(pred,resp_names[x]) %>% 
+#    subset(randSel>0.8) %>% 
+#    #dim(validation_data_rf) #79 76 rows cols
+#    dplyr::select(-randSel)
+#  assign(paste("rf_pred",resp_names[x], sep=""), predict(lich_col_rf_run[x], data=validation_data_rf)) 
+#  #cor(lich_col_rf_pred_run[x],)
+#}
+#
 ## Make a collected output of randomForest models
 lich_col_rf_pred_run<-lapply(1:length(resp_names),lich_col_rf_pred)
+
 lich_col_rf_pred_run[[2]] %>% 
   unlist(recursive=F) %>% 
   as.data.frame() %>% 
@@ -415,26 +433,55 @@ lich_col_rf_pred_run[[2]] %>%
 lich_col_rf_53pred_run
 
 
+##NEW Add correlation of obs vs pred for the validation dataset only
+    obs_input<-lich_vol_df_train %>% 
+      subset(randSel>0.8) %>%
+      dplyr::select(resp_names[1]) %>% as.list()
+    valid_pred_input<-lich_col_rf_pred_run[[1]] %>% 
+      unlist(recursive = FALSE) %>%
+      as.data.frame() %>% 
+      dplyr::select(predictions)
+      #  dim(valid_pred_input)
+    round((cor(valid_pred_input,as.numeric(obs_input[[1]]))^2),2)
 
+cor_valid_pred<- function(x) 
+{
+  obs_input<-lich_vol_df_train %>% 
+    subset(randSel>0.8) %>%
+    dplyr::select(resp_names[x]) %>% as.list()
+  valid_pred_input<-lich_col_rf_pred_run[[x]] %>% 
+    unlist(recursive = FALSE) %>%
+    as.data.frame() %>% 
+    dplyr::select(predictions) 
+  round((cor(valid_pred_input,as.numeric(obs_input[[1]]))^2),2)
+}
+
+cor_valid_out_pred<-lapply(1:length(resp_names), cor_valid_pred) 
+cor_valid_out_pred<-cbind(resp_full_names,cor_valid_out_pred) %>% as.data.frame()
+cor_valid_out_pred
+
+##NEW
 obs_vs_pred_valid<-function(x)
 {
-  obs_input<-eval(parse(text =input$lich_data[x])) %>% 
-    subset(randSel>0.8) %>% 
-    dplyr::select(-randSel);
+  obs_input<-lich_vol_df_train %>% 
+    subset(randSel>0.8) %>%
+    dplyr::select(resp_names[x]) #%>%
   valid_pred_input<-lich_col_rf_pred_run[[x]] %>% 
     unlist(recursive=F) %>% 
     as.data.frame() %>% 
     select(predictions)
-  obs_vs_pred_plot<-ggplot(data=obs_input, mapping=aes(x=eval(parse(text =input$lich[x])),y=eval(parse(text =valid_pred_input))))+ ##, xmax=60, ymax=60))+
-    geom_hex(bins=10, aes(fill = stat(log(count))))+
+  obs_input_plot<-cbind(obs_input,valid_pred_input) %>% rename(obs = resp_names[x], pred = predictions)
+  
+  obs_vs_pred_plot<-ggplot(data=obs_input_plot, mapping=aes(x=obs,y=pred))+#, xmax=100, ymax=100))+
     #labs(x=input$lich[x], y=input$lich_pred[x])+
+    geom_hex(bins=10, aes(fill = stat(log(count))))+
     labs(x=resp_full_names[x], y=paste("Predicted",resp_full_names[x]), size=12)+
     #theme_minimal()+
     theme(panel.background = element_blank())+
     geom_abline(aes(slope=1,intercept=0))+
     stat_smooth(method = "lm", col = "red")+
-    scale_fill_viridis()+
-    annotate("text", label = paste("Obs vs Pred R2=",cor_valid_out[x,2]), x = 40, y = 90, size = 5, colour = "black");
+    scale_fill_viridis()#+
+    annotate("text", label = paste("Obs vs Pred R2=",cor_valid_out_pred[x,2]), x = 40, y = 90, size = 5, colour = "black");
   obs_vs_pred_plot
   #text(x=max(eval(parse(text =input$lich[x])))*0.1,y=max(eval(parse(text =input$lich_pred[x])))*0.9, paste(cor_valid_out[x,2]))
   #max(eval(parse(text =input$lich[2])))*0.1
@@ -443,8 +490,36 @@ obs_vs_pred_valid<-function(x)
   #obs_vs_pred_plot
 }
 
+##OLD
+#obs_vs_pred_valid<-function(x)
+#{
+#  obs_input<-eval(parse(text =input$lich_data[x])) %>% 
+#    subset(randSel>0.8) %>% 
+#    dplyr::select(-randSel);
+#  valid_pred_input<-lich_col_rf_pred_run[[x]] %>% 
+#    unlist(recursive=F) %>% 
+#    as.data.frame() %>% 
+#    select(predictions)
+#  obs_vs_pred_plot<-ggplot(data=obs_input, mapping=aes(x=eval(parse(text =input$lich[x])),y=eval(parse(text =valid_pred_input))))+ ##, xmax=60, ymax=60))+
+#    geom_hex(bins=10, aes(fill = stat(log(count))))+
+#    #labs(x=input$lich[x], y=input$lich_pred[x])+
+#    labs(x=resp_full_names[x], y=paste("Predicted",resp_full_names[x]), size=12)+
+#    #theme_minimal()+
+#    theme(panel.background = element_blank())+
+#    geom_abline(aes(slope=1,intercept=0))+
+#    stat_smooth(method = "lm", col = "red")+
+#    scale_fill_viridis()+
+#    annotate("text", label = paste("Obs vs Pred R2=",cor_valid_out[x,2]), x = 40, y = 90, size = 5, colour = "black");
+#  obs_vs_pred_plot
+#  #text(x=max(eval(parse(text =input$lich[x])))*0.1,y=max(eval(parse(text =input$lich_pred[x])))*0.9, paste(cor_valid_out[x,2]))
+#  #max(eval(parse(text =input$lich[2])))*0.1
+#  #geom_smooth(method="lm")
+#  #geom_line(method='lm', formula= input$lich[x]~input$lich_pred[x])
+#  #obs_vs_pred_plot
+#}
+
 ## Make a blank pdf
-jpeg("obs_vs_pred_hexbin_all_validation.jpg")
+pdf("obs_vs_pred_hexbin_all_validation.pdf")
 #pdf("obs_vs_pred_hexbin_all_validation.pdf")
 ## Apply obs vs pred function to each element in the list of responses
 lapply(1:length(resp_names), obs_vs_pred_valid)
