@@ -5,8 +5,7 @@ source("./Functions/Helpers.R")
 ##Load libraries
 install_or_load_pack(c("tidyverse","caret","randomForest","hexbin","pdp","viridis","ModelMetrics","ranger","Metrics"))
 
-##Old preds, change path to new folder if needing to rerun
-
+##OLD preds, change path to new folder if needing to rerun
 ## Read in all Google Earth Engine (GEE) output from random forest model predictions for each lichen
 ## cover group and the associatedp Landsat derivative predictors
 ## Function slightly modified from Chris Fees response here https://stackoverflow.com/questions/11433432/how-to-import-multiple-csv-files-at-once/21589176#21589176
@@ -22,29 +21,32 @@ install_or_load_pack(c("tidyverse","caret","randomForest","hexbin","pdp","viridi
 #list.files(path) #These are the input files
 ## eg. "pred_rf_blk_l8_tot_20190831_60pred_oob.csv", "pred_rf_brn_l8_tot_20190831_60pred_oob.csv"
 
+##NEW
 ## List of target responses for each output file from GEE
 resp_names<-c('lich_fr','lich_fo','lich_m' ,'lich_cr','lich_tot','drk_l4_tot'  ,'lgt_l4_tot'  ,'yel_l4_tot'  ,'drk_l3_tot'  ,'lgt_l3_tot'  ,'drk_l2_tot'  ,'lgt_l2_tot'  ,
               'blk_l8_tot'  ,'brn_l8_tot'  ,'gry_l8_tot'  ,'grg_l8_tot'  ,'grn_l8_tot'  ,'orn_l8_tot'  ,'wht_l8_tot'  ,'yel_l8_tot', 'lich_vol')
 
+##OLD
 #resp_names<-c('lich_fr','lich_fo', 'lich_tot','drk_l4_tot'  ,'lgt_l4_tot'  ,'yel_l4_tot'  ,'drk_l3_tot'  ,'lgt_l3_tot'  ,'drk_l2_tot'  ,'lgt_l2_tot'  ,
 #              'brn_l8_tot'  ,'gry_l8_tot'  , 'wht_l8_tot'  ,'yel_l8_tot')
+
+##NEW AND OLD BOTH
 resp_full_names<-c('Fruticose lichen cover'     ,'Foliose lichen cover'     ,'Multiform lichen cover'      ,'Crustose lichen cover'     ,'Total lichen cover'    ,
                    'Dark (4 category) lichen cover'  ,'Light (4 category) lichen cover'  ,'Yellow (4 category) lichen cover'  ,'Dark (3 category) lichen cover'  ,'Light (3 category) lichen cover'  ,'Dark (2 category) lichen cover'  ,'Light (2 category) lichen cover'  ,'Black (8 category) lichen cover'  ,'Brown (8 category) lichen cover'  ,'Gray (8 category) lichen cover'  ,'Gray-green (8 category) lichen cover'  ,'Green (8 category) lichen cover'  ,'Orange (8 category) lichen cover'  ,'White (8 category) lichen cover'  ,'Yellow (8 category) lichen cover', 'Lichen volume')
 
+##NEW
 pred_names<-CCDC %>% dplyr::select(-not_preds) %>% colnames() #%>% as.character()
 
-#resp_full_names<-c('Fruticose lichen cover'     ,'Foliose lichen cover'        ,'Total lichen cover'    ,
-#  'Dark (4 category) lichen cover'  ,'Light (4 category) lichen cover'  ,'Yellow (4 category) lichen cover'  ,'Dark (3 category) lichen cover'  ,'Light (3 category) lichen cover'  ,'Dark (2 category) lichen cover'  ,'Light (2 category) lichen cover'  , 'Brown (8 category) lichen cover'  ,'Gray (8 category) lichen cover'  ,'White (8 category) lichen cover'  ,'Yellow (8 category) lichen cover')
-#    #small test
-#    #resp_full_names<-'Total lichen cover'
 ##For each object, generate list of inputs for analysis and plotting following syntax needed for those functions
 
-#Old input function call
+##OLD
+##input function call
 #input<-Make_Inputs(resp_names)
 #input %>% View()
 
 
 ##Make and observed vs predicted graph for each lichen color group
+##OLD
 ## Unit test passes
 #pdf(paste("obs_vs_pred_",input$lich[1],"_test.pdf", sep=""));
 #output_tst<-ggplot(data=eval(parse(text =input$lich_data[1])), 
@@ -63,9 +65,73 @@ pred_names<-CCDC %>% dplyr::select(-not_preds) %>% colnames() #%>% as.character(
 #hist(pred_rf_lich_tot_20190831_60pred_oob$lich_tot)
 #hist(pred_rf_lich_tot_20190831_60pred_oob$lich_tot_pred)
 
+#OLD list of preds
+#pred<-c("aet"              ,"blue_p010"       ,"blue_p025"       ,"blue_p050"       ,"blue_p075"       ,"blue_p090"       ,"def"             ,"evi_p010"       
+#        ,"evi_p025"        ,"evi_p050"        ,"evi_p075"        ,"evi_p090"        ,"green_p010"     ,"green_p025"      ,"green_p050"      ,"green_p075"      
+#        ,"green_p090"       ,"nbr_p010"        ,"nbr_p025"        ,"nbr_p050"        ,"nbr_p075"        ,"nbr_p090"        ,"ndmi_p010"      
+#        ,"ndmi_p025"       ,"ndmi_p050"       ,"ndmi_p075"       ,"ndmi_p090"       ,"ndsi_p010"      ,"ndsi_p025"       ,"ndsi_p050"       ,"ndsi_p075"       
+#        ,"ndsi_p090"       ,"ndvi_p010"       ,"ndvi_p025"       ,"ndvi_p050"       ,"ndvi_p075"       ,"ndvi_p090"       ,"ndwi_p010"      
+#        ,"ndwi_p025"       ,"ndwi_p050"       ,"ndwi_p075"       ,"ndwi_p090"       ,"nir_p010"       ,"nir_p025"        ,"nir_p050"        ,"nir_p075"        
+#        ,"nir_p090"        ,"pdsi"            ,"pet"             ,"pr"              ,"randSel"         ,"red_p010"        ,"red_p025"        ,"red_p050"        
+#        ,"red_p075"        ,"red_p090"        ,"ro"              ,"soil"            ,"srad"            ,"swe"             ,"swir1_p010"      ,"swir1_p025"     
+#        ,"swir1_p050"      ,"swir1_p075"      ,"swir1_p090"      ,"swir2_p010"      ,"swir2_p025"     
+#        ,"swir2_p050"      ,"swir2_p075"      ,"swir2_p090"      ,"tmmn"            ,"tmmx"           ,"vap"             ,"vpd"             ,"vs"              )
 
+
+## Make models using all preds
+
+##OLD
+## Test out selecting just one response variable, adding it to the predictor object
+## Unit test passes
+##train_data_pred<-paste(resp_names[5],"_pred", sep="")
+#train_data<-eval(parse(text =input$lich_data[21])) %>% colnames()
+#dplyr::select(pred,resp_names[21]) %>%
+#  subset(randSel<0.8) %>% 
+#  dplyr::select(-randSel)
+##colnames(train_data)
+##assign(paste("rf_",resp_names[1], sep=""), randomForest(eval(parse(text =lich_rf_formula[1])), data=train_data, localImp = TRUE, ntree=5000)) 
+#assign(paste("rf_",resp_names[21], sep=""), ranger(eval(parse(text =paste(input$lich[21],"~.", sep=""))), data=train_data, local.importance =TRUE, num.trees =15000, importance = "impurity_corrected" )) 
+### Pass Unit test with both 2 and 4 as input
+
+#Build random forest models for each response variable using the trainig 80% split
+lich_col_rf_ranger<-function(x)
+{
+  #NEW RF
+  temp_df<- lich_vol_df_train %>% filter(randSel<0.8)
+  temp_resp<- temp_df %>% dplyr::select(resp_names[x]) #%>% colnames()
+  temp_pred<- temp_df %>% dplyr::select(pred_names) #%>% dim()
+  temp_df_rf<-cbind(temp_resp, temp_pred)
+  assign(paste("rf_",resp_names[x], sep=""), ranger(eval(parse(text =paste(resp_names[x],"~.", sep=""))), data=temp_df_rf, local.importance =TRUE, num.trees =200, importance = "impurity_corrected" )) 
+  
+  #OLD RF
+  #train_data_rf<-eval(parse(text =input$lich_data[x])) %>% 
+  #  dplyr::select(pred,resp_names[x]) %>% 
+  #  subset(randSel<0.8) %>% 
+  #  dplyr::select(-randSel);
+  ##str(train_data_rf) #This runs
+  ##assign(paste("rf_",resp_names[x], sep=""), randomForest(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, localImp = TRUE, ntree=5000)) 
+  #
+  #assign(paste("rf_",resp_names[x], sep=""), ranger(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, local.importance =TRUE, num.trees =15000, importance = "impurity_corrected")) 
+  
+}
+## Apply function 
+lich_col_rf_run<-lapply(1:length(resp_names),lich_col_rf_ranger)
+
+#Check to see stats can be obtained for each model
+lich_col_rf_run[[1]]$r.squared
+
+#Generate models stats for export
+lich_col_df_stat<-lapply(1:length(lich_col_rf_run), function(x) {lich_col_rf_run[[x]]$r.squared}) %>% 
+  unlist() %>%
+  cbind(resp_full_names) %>% 
+  as.data.frame()
+
+write.csv(lich_col_df_stat,"./Output/rf_stats_lichen_color_groups_v_CCDC.csv")
 
 ##Get obs vs pred correlation
+
+##QUESTION: Don't I need to predict the validation dataset first?
+
 ##Correlation between observed vs predicted values for 20% reserved validation data
 ##Unit test PASS
 #validation_data_rf<-eval(parse(text =input$lich_data[5])) %>% 
@@ -78,26 +144,49 @@ pred_names<-CCDC %>% dplyr::select(-not_preds) %>% colnames() #%>% as.character(
 #cor(unlist(lich_col_rf_pred_run[5]),validation_data_rf[,75])
 
 ## Calculate correlation between obs vs predicted values for validation subset
-eval(parse(text =input$lich_data[21])) %>% 
-  dplyr::select(pred,resp_names[21]) %>% 
-  subset(randSel>0.8) %>% 
-  dplyr::select(-randSel) %>% colnames()
+#UNIT TEST 
+obs_input<-lich_vol_df_train %>% 
+  #dplyr::select(pred_names,resp_names[1], randSel) %>% 
+  subset(randSel<0.8) %>%
+  #dplyr::select(-randSel) #%>% colnames()
+  dplyr::select(resp_names[21]) %>% as.list()
+valid_pred_input<-lich_col_rf_run[[21]]$predictions %>% 
+  #unlist(recursive=FALSE) %>% 
+  as.data.frame() #%>% 
+  #select(predictions) %>% as.data.frame()
+#print(nrow(validation_data_rf))
+#str(validation_data_rf$lich_tot)
+#str(lich_col_rf_pred_run[5])
+str(obs_input)
+round((cor(valid_pred_input,obs_input[[1]])^2),2)
 
 cor_valid<- function(x) 
 {
-  obs_input<-eval(parse(text =input$lich_data[x])) %>% 
-    dplyr::select(pred,resp_names[x]) %>% 
-    subset(randSel>0.8) %>% 
-    dplyr::select(-randSel) %>% as.data.frame()
-  valid_pred_input<-lich_col_rf_pred_run[[x]] %>% 
-    unlist(recursive=F) %>% 
-    as.data.frame() %>% 
-    select(predictions) %>% as.data.frame()
-  #print(nrow(validation_data_rf))
-  #str(validation_data_rf$lich_tot)
-  #str(lich_col_rf_pred_run[5])
-  round((cor(valid_pred_input,as.numeric(obs_input[,75]))^2),2)
+  obs_input<-lich_vol_df_train %>% 
+    subset(randSel<0.8) %>%
+    dplyr::select(resp_names[x]) %>% as.list()
+  valid_pred_input<-lich_col_rf_run[[x]]$predictions %>% 
+    as.data.frame() #%>% 
+   round((cor(valid_pred_input,as.numeric(obs_input[[1]]))^2),2)
 }
+
+
+#OLD FUNCTION
+#cor_valid<- function(x) 
+#{
+#  obs_input<-eval(parse(text =input$lich_data[x])) %>% 
+#    dplyr::select(pred,resp_names[x]) %>% 
+#    subset(randSel>0.8) %>% 
+#    dplyr::select(-randSel) %>% as.data.frame()
+#  valid_pred_input<-lich_col_rf_pred_run[[x]] %>% 
+#    unlist(recursive=F) %>% 
+#    as.data.frame() %>% 
+#    select(predictions) %>% as.data.frame()
+#  #print(nrow(validation_data_rf))
+#  #str(validation_data_rf$lich_tot)
+#  #str(lich_col_rf_pred_run[5])
+#  round((cor(valid_pred_input,as.numeric(obs_input[,75]))^2),2)
+#}
 cor_valid_out<-lapply(1:length(resp_names), cor_valid) 
 cor_valid_out<-cbind(resp_full_names,cor_valid_out) %>% as.data.frame()
 cor_valid_out
@@ -111,16 +200,47 @@ colnames(RMSE_GEE)<-c("RMSE","lichen")
 RMSE_GEE
 ## Rebuild random forest models in R to get variable importance, etc..
 
+obs_input<-lich_vol_df_train %>% 
+  #dplyr::select(pred_names,resp_names[1], randSel) %>% 
+  subset(randSel<0.8) %>%
+  #dplyr::select(-randSel) #%>% colnames()
+  dplyr::select(resp_names[1])
+valid_pred_input<-lich_col_rf_run[[1]]$predictions %>% 
+  #unlist(recursive=FALSE) %>% 
+  as.data.frame() #%>% 
+obs_input_plot<-cbind(obs_input,valid_pred_input) %>% rename(obs = resp_names[1], pred = ".")
+
+ggplot(data=obs_input_plot, mapping=aes(x=resp_names[1],y=pred))+#, xmax=100, ymax=100))+
+  geom_hex(bins=15, aes(fill = stat(log(count))))+
+  #labs(x=input$lich[x], y=input$lich_pred[x])+
+  labs(x=resp_full_names[1], y=paste("Predicted",resp_full_names[1]), subtitle=paste("R2=",cor_valid_out[x,2]), title = paste(resp_full_names[x],"Ranger observed vs predicted"))+
+  #theme_minimal()+
+  theme(panel.background = element_blank())+
+  geom_abline(aes(slope=1,intercept=0))+
+  stat_smooth(method = "lm", col = "red")+
+  scale_fill_viridis()#+
+#annotate("text", main = paste("Obs vs Pred R2=",cor_valid_out[x,2]), colour = "black");
+
+#geom_smooth(method="lm")
+#geom_line(method='lm', formula= input$lich[x]~input$lich_pred[x])
+obs_vs_pred_plot
+
 
 ##For each respose variable and associated data set, make a hexbin figure of observed vs predicted values with 1:1 line and sensible axis labels
 obs_vs_pred<- function(x) 
-{obs_input<-eval(parse(text =input$lich_data[x])) %>% 
-  subset(randSel>0.8) %>% 
-  dplyr::select(-randSel);
-obs_vs_pred_plot<-ggplot(data=obs_input, mapping=aes(x=eval(parse(text =input$lich[x])),y=eval(parse(text =input$lich_pred[x]))))+#, xmax=100, ymax=100))+
+{obs_input<-lich_vol_df_train %>% 
+  #dplyr::select(pred_names,resp_names[1], randSel) %>% 
+  subset(randSel<0.8) %>%
+  #dplyr::select(-randSel) #%>% colnames()
+  dplyr::select(resp_names[x]) 
+valid_pred_input<-lich_col_rf_run[[x]]$predictions %>% 
+  #unlist(recursive=FALSE) %>% 
+  as.data.frame() #%>% 
+obs_input_plot<-cbind(obs_input,valid_pred_input) %>% rename(obs = resp_names[x], pred = ".")
+obs_vs_pred_plot<-ggplot(data=obs_input_plot, mapping=aes(x=resp_names[x],y=pred))+#, xmax=100, ymax=100))+
   geom_hex(bins=15, aes(fill = stat(log(count))))+
   #labs(x=input$lich[x], y=input$lich_pred[x])+
-  labs(x=resp_full_names[x], y=paste("Predicted",resp_full_names[x]), subtitle=paste("R2=",cor_valid_out[x,2]), title = paste(resp_full_names[x],"GEE smileRF validation observed vs predicted"))+
+  labs(x=resp_full_names[x], y=paste("Predicted",resp_full_names[x]), subtitle=paste("R2=",cor_valid_out[x,2]), title = paste(resp_full_names[x],"Ranger observed vs predicted"))+
   #theme_minimal()+
   theme(panel.background = element_blank())+
   geom_abline(aes(slope=1,intercept=0))+
@@ -138,60 +258,31 @@ pdf("obs_vs_pred_hexbin_all.pdf")
 lapply(1:length(resp_names), obs_vs_pred)
 dev.off()
 
-#Old list of preds
-#pred<-c("aet"              ,"blue_p010"       ,"blue_p025"       ,"blue_p050"       ,"blue_p075"       ,"blue_p090"       ,"def"             ,"evi_p010"       
-#        ,"evi_p025"        ,"evi_p050"        ,"evi_p075"        ,"evi_p090"        ,"green_p010"     ,"green_p025"      ,"green_p050"      ,"green_p075"      
-#        ,"green_p090"       ,"nbr_p010"        ,"nbr_p025"        ,"nbr_p050"        ,"nbr_p075"        ,"nbr_p090"        ,"ndmi_p010"      
-#        ,"ndmi_p025"       ,"ndmi_p050"       ,"ndmi_p075"       ,"ndmi_p090"       ,"ndsi_p010"      ,"ndsi_p025"       ,"ndsi_p050"       ,"ndsi_p075"       
-#        ,"ndsi_p090"       ,"ndvi_p010"       ,"ndvi_p025"       ,"ndvi_p050"       ,"ndvi_p075"       ,"ndvi_p090"       ,"ndwi_p010"      
-#        ,"ndwi_p025"       ,"ndwi_p050"       ,"ndwi_p075"       ,"ndwi_p090"       ,"nir_p010"       ,"nir_p025"        ,"nir_p050"        ,"nir_p075"        
-#        ,"nir_p090"        ,"pdsi"            ,"pet"             ,"pr"              ,"randSel"         ,"red_p010"        ,"red_p025"        ,"red_p050"        
-#        ,"red_p075"        ,"red_p090"        ,"ro"              ,"soil"            ,"srad"            ,"swe"             ,"swir1_p010"      ,"swir1_p025"     
-#        ,"swir1_p050"      ,"swir1_p075"      ,"swir1_p090"      ,"swir2_p010"      ,"swir2_p025"     
-#        ,"swir2_p050"      ,"swir2_p075"      ,"swir2_p090"      ,"tmmn"            ,"tmmx"           ,"vap"             ,"vpd"             ,"vs"              )
-## Make models using all preds
-## Test out selecting just one response variable, adding it to the predictor object
-## Unit test passes
-#train_data_pred<-paste(resp_names[5],"_pred", sep="")
-train_data<-eval(parse(text =input$lich_data[21])) %>% colnames()
-  dplyr::select(pred,resp_names[21]) %>%
-  subset(randSel<0.8) %>% 
-  dplyr::select(-randSel)
-#colnames(train_data)
-#assign(paste("rf_",resp_names[1], sep=""), randomForest(eval(parse(text =lich_rf_formula[1])), data=train_data, localImp = TRUE, ntree=5000)) 
-assign(paste("rf_",resp_names[21], sep=""), ranger(eval(parse(text =paste(input$lich[21],"~.", sep=""))), data=train_data, local.importance =TRUE, num.trees =15000, importance = "impurity_corrected" )) 
-## Pass Unit test with both 2 and 4 as input
-
-lich_col_rf_ranger<-function(x)
-{
-  #NEW RF
-  temp_df<- lich_vol_df_train %>% filter(randSel==0)
-  temp_resp<- temp_df %>% dplyr::select(resp_names[x]) #%>% colnames()
-  temp_pred<- temp_df %>% dplyr::select(pred_names) #%>% dim()
-  temp_df_rf<-cbind(temp_resp, temp_pred)
-  assign(paste("rf_",resp_names[x], sep=""), ranger(eval(parse(text =paste(resp_names[x],"~.", sep=""))), data=temp_df_rf, local.importance =TRUE, num.trees =20000, importance = "impurity_corrected" )) 
-  
-  #OLD RF
-  #train_data_rf<-eval(parse(text =input$lich_data[x])) %>% 
-  #  dplyr::select(pred,resp_names[x]) %>% 
-  #  subset(randSel<0.8) %>% 
-  #  dplyr::select(-randSel);
-  ##str(train_data_rf) #This runs
-  ##assign(paste("rf_",resp_names[x], sep=""), randomForest(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, localImp = TRUE, ntree=5000)) 
-  #
-  #assign(paste("rf_",resp_names[x], sep=""), ranger(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, local.importance =TRUE, num.trees =15000, importance = "impurity_corrected")) 
-  
-}
-## Apply function 
-lich_col_rf_run<-lapply(1:length(resp_names),lich_col_rf_ranger)
-
-lich_col_rf_run[[1]]$r.squared
-lich_col_df_stat<-lapply(1:length(lich_col_rf_run), function(x) {lich_col_rf_run[[x]]$r.squared}) %>% 
-  unlist() %>%
-  cbind(resp_full_names) %>% 
-  as.data.frame()
-
-write.csv(lich_col_df_stat,"./Output/rf_stats_lichen_color_groups_v_CCDC.csv")
+##OLD
+#obs_vs_pred<- function(x) 
+#{obs_input<-eval(parse(text =input$lich_data[x])) %>% 
+#  subset(randSel>0.8) %>% 
+#  dplyr::select(-randSel);
+#obs_vs_pred_plot<-ggplot(data=obs_input, mapping=aes(x=eval(parse(text =input$lich[x])),y=eval(parse(text =input$lich_pred[x]))))+#, xmax=100, ymax=100))+
+#  geom_hex(bins=15, aes(fill = stat(log(count))))+
+#  #labs(x=input$lich[x], y=input$lich_pred[x])+
+#  labs(x=resp_full_names[x], y=paste("Predicted",resp_full_names[x]), subtitle=paste("R2=",cor_valid_out[x,2]), title = paste(resp_full_names[x],"GEE smileRF validation observed vs predicted"))+
+#  #theme_minimal()+
+#  theme(panel.background = element_blank())+
+#  geom_abline(aes(slope=1,intercept=0))+
+#  stat_smooth(method = "lm", col = "red")+
+#  scale_fill_viridis()#+
+##annotate("text", main = paste("Obs vs Pred R2=",cor_valid_out[x,2]), colour = "black");
+#
+##geom_smooth(method="lm")
+##geom_line(method='lm', formula= input$lich[x]~input$lich_pred[x])
+#obs_vs_pred_plot};
+#obs_vs_pred(21)
+### Make a blank pdf
+#pdf("obs_vs_pred_hexbin_all.pdf")
+### Apply obs vs pred function to each element in the list of responses
+#lapply(1:length(resp_names), obs_vs_pred)
+#dev.off()
 
 ## Find  and remove intercorrelated variables and rerun ranger random forests      
 corrMatrix <- eval(parse(text =input$lich_data[1])) %>% 

@@ -7,6 +7,7 @@ require(pdp)
 #require(randomForestExplainer)
 require(ranger)
 require(sf)
+require(viridis)
 ## Read in all Google Earth Engine (GEE) output from random forest model predictions for each lichen
 ## cover group and the associatedp Landsat derivative predictors
 ## Function slightly modified from Chris Fees response here https://stackoverflow.com/questions/11433432/how-to-import-multiple-csv-files-at-once/21589176#21589176
