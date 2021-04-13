@@ -5,7 +5,8 @@ source("./Functions/Helpers.R")
 ##Load libraries
 install_or_load_pack(c("tidyverse","caret","randomForest","hexbin","pdp","viridis","ModelMetrics","ranger","Metrics"))
 
-##OLD preds, change path to new folder if needing to rerun
+##### 
+#OLD preds, change path to new folder if needing to rerun
 ## Read in all Google Earth Engine (GEE) output from random forest model predictions for each lichen
 ## cover group and the associatedp Landsat derivative predictors
 ## Function slightly modified from Chris Fees response here https://stackoverflow.com/questions/11433432/how-to-import-multiple-csv-files-at-once/21589176#21589176
@@ -20,12 +21,13 @@ install_or_load_pack(c("tidyverse","caret","randomForest","hexbin","pdp","viridi
 #
 #list.files(path) #These are the input files
 ## eg. "pred_rf_blk_l8_tot_20190831_60pred_oob.csv", "pred_rf_brn_l8_tot_20190831_60pred_oob.csv"
+#####
 
 ##NEW
 ## List of target responses for each output file from GEE
 resp_names<-c('lich_fr','lich_fo','lich_m' ,'lich_cr','lich_tot','drk_l4_tot'  ,'lgt_l4_tot'  ,'yel_l4_tot'  ,'drk_l3_tot'  ,'lgt_l3_tot'  ,'drk_l2_tot'  ,'lgt_l2_tot'  ,
               'blk_l8_tot'  ,'brn_l8_tot'  ,'gry_l8_tot'  ,'grg_l8_tot'  ,'grn_l8_tot'  ,'orn_l8_tot'  ,'wht_l8_tot'  ,'yel_l8_tot', 'lich_vol')
-
+##### 
 ##OLD
 #resp_names<-c('lich_fr','lich_fo', 'lich_tot','drk_l4_tot'  ,'lgt_l4_tot'  ,'yel_l4_tot'  ,'drk_l3_tot'  ,'lgt_l3_tot'  ,'drk_l2_tot'  ,'lgt_l2_tot'  ,
 #              'brn_l8_tot'  ,'gry_l8_tot'  , 'wht_l8_tot'  ,'yel_l8_tot')
@@ -38,7 +40,7 @@ resp_full_names<-c('Fruticose lichen cover'     ,'Foliose lichen cover'     ,'Mu
 pred_names<-CCDC %>% dplyr::select(-not_preds) %>% colnames() #%>% as.character()
 
 ##For each object, generate list of inputs for analysis and plotting following syntax needed for those functions
-
+##### 
 ##OLD
 ##input function call
 #input<-Make_Inputs(resp_names)
@@ -92,12 +94,13 @@ pred_names<-CCDC %>% dplyr::select(-not_preds) %>% colnames() #%>% as.character(
 ##assign(paste("rf_",resp_names[1], sep=""), randomForest(eval(parse(text =lich_rf_formula[1])), data=train_data, localImp = TRUE, ntree=5000)) 
 #assign(paste("rf_",resp_names[21], sep=""), ranger(eval(parse(text =paste(input$lich[21],"~.", sep=""))), data=train_data, local.importance =TRUE, num.trees =15000, importance = "impurity_corrected" )) 
 ### Pass Unit test with both 2 and 4 as input
+##### 
 
 #Build random forest models for each response variable using the trainig 80% split
 lich_col_rf_ranger<-function(x)
 {
   #NEW RF
-  temp_df<- lich_vol_df_train %>% filter(randSel<0.8)
+  temp_df<- lich_vol_df#_train %>% filter(randSel<0.8)
   temp_resp<- temp_df %>% dplyr::select(resp_names[x]) #%>% colnames()
   temp_pred<- temp_df %>% dplyr::select(pred_names) #%>% dim()
   temp_df_rf<-cbind(temp_resp, temp_pred)
@@ -117,21 +120,17 @@ lich_col_rf_ranger<-function(x)
 ## Apply function 
 lich_col_rf_run<-lapply(1:length(resp_names),lich_col_rf_ranger)
 
-#Check to see stats can be obtained for each model
-lich_col_rf_run[[1]]$r.squared
-
 #Generate models stats for export
 lich_col_df_stat<-lapply(1:length(lich_col_rf_run), function(x) {lich_col_rf_run[[x]]$r.squared}) %>% 
   unlist() %>%
   cbind(resp_full_names) %>% 
   as.data.frame()
 
-write.csv(lich_col_df_stat,"./Output/rf_stats_lichen_color_groups_v_CCDC.csv")
 
 ##Get obs vs pred correlation
 
-##QUESTION: Don't I need to predict the validation dataset first?
-
+##### 
+##OLD
 ##Correlation between observed vs predicted values for 20% reserved validation data
 ##Unit test PASS
 #validation_data_rf<-eval(parse(text =input$lich_data[5])) %>% 
@@ -142,35 +141,33 @@ write.csv(lich_col_df_stat,"./Output/rf_stats_lichen_color_groups_v_CCDC.csv")
 ##str(lich_col_rf_pred_run[5])
 #
 #cor(unlist(lich_col_rf_pred_run[5]),validation_data_rf[,75])
+##### 
 
 ## Calculate correlation between obs vs predicted values for validation subset
 #UNIT TEST 
-obs_input<-lich_vol_df_train %>% 
-  #dplyr::select(pred_names,resp_names[1], randSel) %>% 
-  subset(randSel<0.8) %>%
-  #dplyr::select(-randSel) #%>% colnames()
-  dplyr::select(resp_names[21]) %>% as.list()
-valid_pred_input<-lich_col_rf_run[[21]]$predictions %>% 
-  #unlist(recursive=FALSE) %>% 
-  as.data.frame() #%>% 
-  #select(predictions) %>% as.data.frame()
-#print(nrow(validation_data_rf))
-#str(validation_data_rf$lich_tot)
-#str(lich_col_rf_pred_run[5])
-str(obs_input)
+obs_input<-lich_vol_df %>% 
+  dplyr::select(resp_names[21]) 
+valid_pred_input<-lich_col_rf_run[[21]]$predictions %>% as.data.frame()
 round((cor(valid_pred_input,obs_input[[1]])^2),2)
+Metrics::rmse(valid_pred_input$., obs_input[[1]])
+##PASS
+
 
 cor_valid<- function(x) 
 {
-  obs_input<-lich_vol_df_train %>% 
-    subset(randSel<0.8) %>%
-    dplyr::select(resp_names[x]) %>% as.list()
+  obs_input<-lich_vol_df %>% 
+    dplyr::select(resp_names[x]) 
   valid_pred_input<-lich_col_rf_run[[x]]$predictions %>% 
     as.data.frame() #%>% 
-   round((cor(valid_pred_input,as.numeric(obs_input[[1]]))^2),2)
+    cor_out<-round((cor(valid_pred_input,obs_input[[1]])^2),2)
+    mae_out<-Metrics::mae(valid_pred_input$.,obs_input[[1]])
+    rmse_out<-Metrics::rmse(valid_pred_input$.,obs_input[[1]])
+    sse_out<-Metrics::sse(valid_pred_input$.,obs_input[[1]])
+    stats_out<-c(cor_out, mae_out, rmse_out, sse_out)
+    return(stats_out)
 }
 
-
+##### 
 #OLD FUNCTION
 #cor_valid<- function(x) 
 #{
@@ -187,31 +184,20 @@ cor_valid<- function(x)
 #  #str(lich_col_rf_pred_run[5])
 #  round((cor(valid_pred_input,as.numeric(obs_input[,75]))^2),2)
 #}
-cor_valid_out<-lapply(1:length(resp_names), cor_valid) 
+##### 
+cor_valid_out<-lapply(1:length(resp_names), cor_valid) %>% as.data.frame() %>% t()
 cor_valid_out<-cbind(resp_full_names,cor_valid_out) %>% as.data.frame()
-cor_valid_out
-str(obs_input)
-##Root mean square error
-##Unit test
-RMSE<- function(x)
-{rmse(eval(parse(text =paste(input$lich_data[x],"$",input$lich[x], sep=""))),eval(parse(text =paste(input$lich_data[x],"$",input$lich_pred[x], sep=""))))}
-RMSE_GEE<-lapply(1:length(resp_names),RMSE) %>% cbind(input$lich) %>% as.data.frame()
-colnames(RMSE_GEE)<-c("RMSE","lichen")
-RMSE_GEE
-## Rebuild random forest models in R to get variable importance, etc..
+rownames(cor_valid_out)<-NULL
+colnames(cor_valid_out)<-c("Lichen Group","Obs vs Pred correlation", "MAE","RMSE","SSE")
+write.csv(cor_valid_out,"./Output/rf_stats_lichen_color_groups_v_CCDC.csv")
 
-obs_input<-lich_vol_df_train %>% 
-  #dplyr::select(pred_names,resp_names[1], randSel) %>% 
-  subset(randSel<0.8) %>%
-  #dplyr::select(-randSel) #%>% colnames()
-  dplyr::select(resp_names[1])
-valid_pred_input<-lich_col_rf_run[[1]]$predictions %>% 
-  #unlist(recursive=FALSE) %>% 
-  as.data.frame() #%>% 
+##UNIT TEST for plotting obs vs pred
+valid_pred_input<-lich_col_rf_run[[1]]$predictions %>% as.data.frame()  
 obs_input_plot<-cbind(obs_input,valid_pred_input) %>% rename(obs = resp_names[1], pred = ".")
-#plot(obs_input_plot$obs, obs_input_plot$pred)
+
+##UNIT TEST on plotting obs vs pred
 ggplot(data=obs_input_plot, mapping=aes(x=resp_names[1],y=pred))+#, xmax=100, ymax=100))+
-  geom_abline()
+  #geom_abline()
   #geom_hex(bins=15, aes(fill = stat(log(count))))+
   #labs(x=input$lich[x], y=input$lich_pred[x])+
   labs(x=resp_full_names[1], y=paste("Predicted",resp_full_names[1]), subtitle=paste("R2=",cor_valid_out[1,2]), title = paste(resp_full_names[1],"Ranger observed vs predicted"))+
@@ -224,41 +210,37 @@ ggplot(data=obs_input_plot, mapping=aes(x=resp_names[1],y=pred))+#, xmax=100, ym
 
 #geom_smooth(method="lm")
 #geom_line(method='lm', formula= input$lich[x]~input$lich_pred[x])
-obs_vs_pred_plot
+#obs_vs_pred_plot
 
 
 ##For each respose variable and associated data set, make a hexbin figure of observed vs predicted values with 1:1 line and sensible axis labels
 obs_vs_pred<- function(x) 
-{obs_input<-lich_vol_df_train %>% 
-  #dplyr::select(pred_names,resp_names[1], randSel) %>% 
-  subset(randSel<0.8) %>%
-  #dplyr::select(-randSel) #%>% colnames()
-  dplyr::select(resp_names[x]) 
-valid_pred_input<-lich_col_rf_run[[x]]$predictions %>% 
-  #unlist(recursive=FALSE) %>% 
-  as.data.frame() #%>% 
-obs_input_plot<-cbind(obs_input,valid_pred_input) %>% rename(obs = resp_names[x], pred = ".")
-obs_vs_pred_plot<-ggplot(data=obs_input_plot, mapping=aes(x=obs,y=pred))+#, xmax=100, ymax=100))+
+{
+  obs_input<-lich_vol_df %>% dplyr::select(resp_names[x]) 
+  valid_pred_input<-lich_col_rf_run[[x]]$predictions %>% as.data.frame()
+  obs_input_plot<-cbind(obs_input,valid_pred_input) %>% rename(obs = resp_names[x], pred = ".")
+
+  obs_vs_pred_plot<-ggplot(data=obs_input_plot, mapping=aes(x=obs,y=pred))+#, xmax=100, ymax=100))+
   geom_hex(bins=15, aes(fill = stat(log(count))))+
-  #labs(x=input$lich[x], y=input$lich_pred[x])+
   labs(x=resp_full_names[x], y=paste("Predicted",resp_full_names[x]), subtitle=paste("R2=",cor_valid_out[x,2]), title = paste(resp_full_names[x],"Ranger observed vs predicted"))+
-  #theme_minimal()+
   theme(panel.background = element_blank())+
   geom_abline(aes(slope=1,intercept=0))+
   stat_smooth(method = "lm", col = "red")+
-  scale_fill_viridis()#+
-  #annotate("text", main = paste("Obs vs Pred R2=",cor_valid_out[x,2]), colour = "black");
+  scale_fill_viridis()+
+  annotate("text", main = paste("Obs vs Pred R2=",cor_valid_out[x,2]), colour = "black");
 
-#geom_smooth(method="lm")
-#geom_line(method='lm', formula= input$lich[x]~input$lich_pred[x])
 obs_vs_pred_plot};
-obs_vs_pred(21)
+obs_vs_pred_est<-lapply(1:length(resp_names), obs_vs_pred)
+
+obs_vs_pred_est[2]
+
 ## Make a blank pdf
-pdf("obs_vs_pred_hexbin_all.pdf")
+pdf("./Output/obs_vs_pred_hexbin_all.pdf")
 ## Apply obs vs pred function to each element in the list of responses
 lapply(1:length(resp_names), obs_vs_pred)
 dev.off()
 
+##### 
 ##OLD
 #obs_vs_pred<- function(x) 
 #{obs_input<-eval(parse(text =input$lich_data[x])) %>% 
@@ -284,16 +266,17 @@ dev.off()
 ### Apply obs vs pred function to each element in the list of responses
 #lapply(1:length(resp_names), obs_vs_pred)
 #dev.off()
+##### 
 
 ## Find  and remove intercorrelated variables and rerun ranger random forests      
-corrMatrix <- eval(parse(text =input$lich_data[1])) %>% 
+corrMatrix <- #eval(parse(text =input$lich_data[1])) %>% 
   dplyr::select(pred) %>% 
   subset(randSel<0.8) %>% 
   dplyr::select(-randSel) %>% #dim()
   cor()
 caret_findCorr <- findCorrelation(corrMatrix, cutoff = 0.97, verbose=TRUE, names=TRUE, exact=TRUE)
 caret_findCorr  %>% sort()
-#plot(ndvi_p025~ndvi_p010, data=eval(parse(text =input$lich_data[1])))
+
 eval(parse(text =input$lich_data[1])) %>% 
   dplyr::select(pred) %>% 
   subset(randSel<0.8) %>% 
@@ -301,17 +284,10 @@ eval(parse(text =input$lich_data[1])) %>%
 
 lich_col_rf_ranger_53var<-function(x)
 {
-  ##assign(paste("rf_dummest_",resp_names[x], sep=""), randomForest(eval(parse(text =lich_rf_formula[x])), data=train_data, localImp = TRUE, ntree=2000)) 
-  #input$lich_data[x]
-  #resp_names[x]
-  #lich_rf_formula[x]
-  #ImpPreds<-rf_AIR[x] %>% as.data.frame()
   train_data_rf<-eval(parse(text =input$lich_data[x])) %>% 
     dplyr::select(pred,resp_names[x]) %>% 
     subset(randSel<0.8) %>% 
     dplyr::select(-randSel,-caret_findCorr);
-  #str(train_data_rf) #This runs
-  #assign(paste("rf_",resp_names[x], sep=""), randomForest(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, localImp = TRUE, ntree=5000)) 
   assign(paste("rf_53pred",resp_names[x], sep=""),ranger(eval(parse(text =paste(input$lich[x],"~.", sep=""))), data=train_data_rf, local.importance =TRUE, num.trees =15000, importance = "impurity_corrected")) 
 }  
 
@@ -476,11 +452,11 @@ obs_vs_pred_valid<-function(x)
     #labs(x=input$lich[x], y=input$lich_pred[x])+
     geom_hex(bins=10, aes(fill = stat(log(count))))+
     labs(x=resp_full_names[x], y=paste("Predicted",resp_full_names[x]), size=12)+
-    #theme_minimal()+
+    theme_minimal()+
     theme(panel.background = element_blank())+
     geom_abline(aes(slope=1,intercept=0))+
     stat_smooth(method = "lm", col = "red")+
-    scale_fill_viridis()#+
+    scale_fill_viridis()+
     annotate("text", label = paste("Obs vs Pred R2=",cor_valid_out_pred[x,2]), x = 40, y = 90, size = 5, colour = "black");
   obs_vs_pred_plot
   #text(x=max(eval(parse(text =input$lich[x])))*0.1,y=max(eval(parse(text =input$lich_pred[x])))*0.9, paste(cor_valid_out[x,2]))
@@ -489,7 +465,7 @@ obs_vs_pred_valid<-function(x)
   #geom_line(method='lm', formula= input$lich[x]~input$lich_pred[x])
   #obs_vs_pred_plot
 }
-
+##### 
 ##OLD
 #obs_vs_pred_valid<-function(x)
 #{
@@ -517,9 +493,9 @@ obs_vs_pred_valid<-function(x)
 #  #geom_line(method='lm', formula= input$lich[x]~input$lich_pred[x])
 #  #obs_vs_pred_plot
 #}
-
+##### 
 ## Make a blank pdf
-pdf("obs_vs_pred_hexbin_all_validation.pdf")
+pdf("./Output/obs_vs_pred_hexbin_all_validation.pdf")
 #pdf("obs_vs_pred_hexbin_all_validation.pdf")
 ## Apply obs vs pred function to each element in the list of responses
 lapply(1:length(resp_names), obs_vs_pred_valid)

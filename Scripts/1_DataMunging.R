@@ -8,6 +8,7 @@ require(pdp)
 require(ranger)
 require(sf)
 require(viridis)
+require(Metrics)
 ## Read in all Google Earth Engine (GEE) output from random forest model predictions for each lichen
 ## cover group and the associatedp Landsat derivative predictors
 ## Function slightly modified from Chris Fees response here https://stackoverflow.com/questions/11433432/how-to-import-multiple-csv-files-at-once/21589176#21589176
@@ -174,7 +175,18 @@ lich_vol_df<-preds %>% inner_join(veg_meas, by=c("plotId"="plot")) #%>% colnames
 lich_vol_df<-lich_vol_df %>% filter(is.na(AdjHeight)==FALSE) #%>% nrow()
   
 #Make lichen volume columns
+#QUESTION: Do I need to rescale lich_tot to cm2 so that I can multiple by 
+# AdjHeight, which should be in cm so I can get cm3?
 lich_vol_df$lich_vol<-lich_vol_df$AdjHeight*lich_vol_df$lich_tot
+
+pdf(paste("./Output/Lichen_Volume_vs_Cover.pdf"))
+ggplot(lich_vol_df,aes(lich_tot,lich_vol))+
+  labs(x="Lichen Cover", y="Lichen cover x height = Volume")+
+  geom_hex(bins=15, aes(fill = stat(log(count))))+
+  theme(panel.background = element_blank())+
+  stat_smooth(aes(lich_tot,lich_vol),method = "lm", col = "red")+
+  scale_fill_viridis()
+dev.off()
 
 #Add random nmber of 80/20 split
   rand_col<-sample(seq_len(nrow(lich_vol_df)),size = floor(0.75*nrow(lich_vol_df)))
