@@ -161,9 +161,13 @@ cor_valid<- function(x)
     as.data.frame() #%>% 
     cor_out<-round((cor(valid_pred_input,obs_input[[1]])^2),2)
     mae_out<-Metrics::mae(valid_pred_input$.,obs_input[[1]])
+      mae_out<-round(mae_out,2)
     rmse_out<-Metrics::rmse(valid_pred_input$.,obs_input[[1]])
+      rmse_out<-round(rmse_out,2)
     sse_out<-Metrics::sse(valid_pred_input$.,obs_input[[1]])
+      sse_out<-round(sse_out,2)
     stats_out<-c(cor_out, mae_out, rmse_out, sse_out)
+    
     return(stats_out)
 }
 
@@ -206,11 +210,6 @@ ggplot(data=obs_input_plot, mapping=aes(x=resp_names[1],y=pred))+#, xmax=100, ym
   geom_abline(aes(slope=1,intercept=0))+
   stat_smooth(method = "lm", col = "red")+
   scale_fill_viridis()#+
-#annotate("text", main = paste("Obs vs Pred R2=",cor_valid_out[x,2]), colour = "black");
-
-#geom_smooth(method="lm")
-#geom_line(method='lm', formula= input$lich[x]~input$lich_pred[x])
-#obs_vs_pred_plot
 
 
 ##For each respose variable and associated data set, make a hexbin figure of observed vs predicted values with 1:1 line and sensible axis labels
@@ -232,7 +231,6 @@ obs_vs_pred<- function(x)
 obs_vs_pred_plot};
 obs_vs_pred_est<-lapply(1:length(resp_names), obs_vs_pred)
 
-obs_vs_pred_est[2]
 
 ## Make a blank pdf
 pdf("./Output/obs_vs_pred_hexbin_all.pdf")
@@ -268,6 +266,8 @@ dev.off()
 #dev.off()
 ##### 
 
+
+####LEFT OFF HERE UPDATING OLD CODE WITH NEW
 ## Find  and remove intercorrelated variables and rerun ranger random forests      
 corrMatrix <- #eval(parse(text =input$lich_data[1])) %>% 
   dplyr::select(pred) %>% 
