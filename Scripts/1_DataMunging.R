@@ -175,17 +175,23 @@ lich_vol_df<-preds %>% inner_join(veg_meas, by=c("plotId"="plot")) #%>% colnames
 lich_vol_df<-lich_vol_df %>% filter(is.na(AdjHeight)==FALSE) #%>% nrow()
   
 #Make lichen volume columns
-#QUESTION: Do I need to rescale lich_tot to cm2 so that I can multiple by 
-# AdjHeight, which should be in cm so I can get cm3?
-lich_vol_df$lich_vol<-lich_vol_df$AdjHeight*lich_vol_df$lich_tot
+#rescal lichen total to be m2
+lich_vol_df$lich_tot
+
+#lich_vol_df$lich_vol<-lich_vol_df$AdjHeight*lich_vol_df$lich_tot
+lich_vol_df$lich_vol<-((lich_vol_df$AdjHeight/10)*((lich_vol_df$lich_tot/100)*(pi*3470^2)))/(100^3)
+
+hist(lich_vol_df$lich_vol)  
 
 pdf(paste("./Output/Lichen_Volume_vs_Cover.pdf"))
-ggplot(lich_vol_df,aes(lich_tot,lich_vol))+
-  labs(x="Lichen Cover", y="Lichen cover x height = Volume")+
+ggplot(lich_vol_df,aes(((lich_tot/100)*(pi*34.7^2)),lich_vol))+
+  labs(x=expression ("Lichen cover"~m^2), y=expression("Lichen volume"~m^3))+
   geom_hex(bins=15, aes(fill = stat(log(count))))+
   theme(panel.background = element_blank())+
-  stat_smooth(aes(lich_tot,lich_vol),method = "lm", col = "red")+
-  scale_fill_viridis()
+  #stat_smooth(aes(lich_tot,lich_vol),method = "lm", col = "red")+
+  scale_fill_viridis()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_x_continuous(labels = scales::comma)
 dev.off()
 
 #Add random nmber of 80/20 split
