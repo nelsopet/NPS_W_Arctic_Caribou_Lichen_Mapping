@@ -125,7 +125,46 @@ Env$plot<-ifelse(Env$plot=="JMIXED1"   ,"JMixed1",Env$plot);
 veg_meas<-Full_Comm %>% 
   inner_join(Env, by=c(colnames(Full_Comm[,2:11])), keep=FALSE) %>% #colnames()
   dplyr::select(plot, AdjHeight) %>%
-  inner_join(WAH_lich, by=c("plot"="plot_id"))# %>% colnames()
+  inner_join(WAH_lich, by=c("plot"="plot_id")) %>%
+  mutate(lichen_volume = AdjHeight*lich_tot) %>%
+  rename(
+    adjusted_height=AdjHeight 
+    ,source_data=src_data  
+    ,sample_year=samp_year 
+    ,sample_date=samp_date 
+    ,latitude=dd_lat    
+    ,longitude=dd_lon    
+    #,datum=hdatum    
+    ,fruticose_lichen_total_cover=lich_fr   
+    ,foliose_lichen_total_cover=lich_fo   
+    ,multiform_lichen_total_cover=lich_m    
+    ,crustose_lichen_total_cover=lich_cr   
+    ,lichen_total_cover=lich_tot  
+    ,dark_lichen_4bin_total_cover=drk_l4_tot
+    ,light_lichen_4bin_total_cover=lgt_l4_tot
+    ,yellow_lichen_4bin_total_cover=yel_l4_tot
+    ,dark_lichen_3bin_total_cover=drk_l3_tot
+    ,light_lichen_3bin_total_cover=lgt_l3_tot
+    ,dark_lichen_2bin_total_cover=drk_l2_tot
+    ,light_lichen_2bin_total_cover=lgt_l2_tot
+    ,black_lichen_8bin_total_cover=blk_l8_tot
+    ,brown_lichen_8bin_total_cover=brn_l8_tot
+    ,grey_lichen_8bin_total_cover=gry_l8_tot
+    ,greygreen_lichen_8bin_total_cover=grg_l8_tot
+    ,green_lichen_8bin_total_cover=grn_l8_tot
+    ,orange_lichen_8bin_total_cover=orn_l8_tot
+    ,white_lichen_8bin_total_cover=wht_l8_tot
+    ,yellow_lichen_8bin_total_cover=yel_l8_tot) %>%
+    as.data.frame() %>%
+    dplyr::select(-hdatum,-source_data) %>% #colnames()
+    replace(is.na(.)==TRUE, "")
+
+
+#Write out csv for GEE
+    write_csv(veg_meas,"./Output/lichen_volume_cover_by_color_group_NAD83.csv")
+
+#lich_vol_df$lich_vol<-((lich_vol_df$AdjHeight/10)*((lich_vol_df$lich_tot/100)*(pi*3470^2)))/(100^3)
+
 #New preds
 preds<-CCDC %>% dplyr::select(-not_preds, plotId)  #%>% colnames()
 ##Old preds
@@ -174,14 +213,8 @@ preds<-CCDC %>% dplyr::select(-not_preds, plotId)  #%>% colnames()
 lich_vol_df<-preds %>% inner_join(veg_meas, by=c("plotId"="plot")) #%>% colnames()
 lich_vol_df<-lich_vol_df %>% filter(is.na(AdjHeight)==FALSE) #%>% nrow()
   
-#Make lichen volume columns
-#rescal lichen total to be m2
-lich_vol_df$lich_tot
 
-#lich_vol_df$lich_vol<-lich_vol_df$AdjHeight*lich_vol_df$lich_tot
-lich_vol_df$lich_vol<-((lich_vol_df$AdjHeight/10)*((lich_vol_df$lich_tot/100)*(pi*3470^2)))/(100^3)
-
-hist(lich_vol_df$lich_vol)  
+#Write out csv
 
 pdf(paste("./Output/Lichen_Volume_vs_Cover.pdf"))
 ggplot(lich_vol_df,aes(((lich_tot/100)*(pi*34.7^2)),lich_vol))+
