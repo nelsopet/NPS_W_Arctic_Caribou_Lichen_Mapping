@@ -16,6 +16,8 @@ require(Metrics)
 path = "/Users/peternelson 1/Documents/UMFK/Grants/NPS WAH/Data/2018/GEE_output/20200309/";
 wd = getwd()
 list.files(path)
+wd_NPS = "/Users/peternelson 1/Documents/Gradschool/Gates/Data/To Dave"
+list.files(wd_NPS)
 source("./Functions/Helpers.R")
 
 ##Load lichen cover by color group from nasa-veg-data-ingest-r repo 
@@ -78,6 +80,9 @@ WAH_ENV<-read.table(paste(wd,"/Data/Old/","ENV_ARCN_Apr5_2017.txt", sep=""), hea
 #402 rows of env data but no shrubs. These are the data Emily used in the final manuscript on lichen depth 
 Full_Comm<-read.csv(paste(wd,"/Data/","full_community_14Jul20.csv", sep=""), sep=",", header=TRUE, stringsAsFactors = FALSE)
 
+#
+GAAR_ENV_toNPS<-readxl::read_excel(paste(wd_NPS,"/GAAR Plot Env Data.xls",sep=""))
+  GAAR_ENV_toNPS<-GAAR_ENV_toNPS %>% rename(plot=`Veg Plot`)
 Env<-read.table(paste(wd,"/Data/Old/","ENV_ARCN_June4_2019.txt", sep=""),sep=",", header=TRUE, stringsAsFactors = F) 
 
 #402 rows of env data but no shrubs. 
@@ -89,7 +94,7 @@ Env %>%  # anti_join(XY_ENV, by="plot")
   dplyr::select(plot) %>% 
   left_join(GAAR_ENV, by=c("plot"="Veg_Plot")) %>% 
   left_join(XY_ENV, by="plot") %>% 
-  colnames()
+  dim()
 
 #Change the names of the plots to match those from GAAR and the rest of ARCN
 #WAH_ENV$plot<-ifelse(WAH_ENV$plot=="6L "       ,"6L",WAH_ENV$plot);
@@ -100,6 +105,7 @@ Env %>%  # anti_join(XY_ENV, by="plot")
 #WAH_ENV$plot<-ifelse(WAH_ENV$plot=="JLICHEN2"  ,"JLichen2",WAH_ENV$plot);
 #WAH_ENV$plot<-ifelse(WAH_ENV$plot=="JMIXED1"   ,"JMixed1",WAH_ENV$plot);
 
+#Rename plots to match other tables
 Env$plot<-ifelse(Env$plot=="6L "       ,"6L",Env$plot);
 Env$plot<-ifelse(Env$plot=="JPALISADE1","Jpalisad",Env$plot);
 Env$plot<-ifelse(Env$plot=="DUNE2"     ,"Dune2",Env$plot);
@@ -107,6 +113,14 @@ Env$plot<-ifelse(Env$plot=="DUNES1"    ,"Dunes1",Env$plot);
 Env$plot<-ifelse(Env$plot=="JLICHEN1"  ,"JLichen1",Env$plot);
 Env$plot<-ifelse(Env$plot=="JLICHEN2"  ,"JLichen2",Env$plot);
 Env$plot<-ifelse(Env$plot=="JMIXED1"   ,"JMixed1",Env$plot);
+
+#Make Env table out of data Emily used in lichen depth ms
+Env_use<-Full_Comm %>% 
+  inner_join(Env, by=c(colnames(Full_Comm[,2:11])), keep=FALSE) %>% #colnames()
+  dplyr::select(plot,tree:water)
+
+
+
 
 XY_ENV$plot<-ifelse(XY_ENV$plot=="6L "       ,"6L",XY_ENV$plot);
 XY_ENV$plot<-ifelse(XY_ENV$plot=="JPALISADE1","Jpalisad",XY_ENV$plot);
@@ -117,23 +131,44 @@ XY_ENV$plot<-ifelse(XY_ENV$plot=="JLICHEN2"  ,"JLichen2",XY_ENV$plot);
 XY_ENV$plot<-ifelse(XY_ENV$plot=="JMIXED1"   ,"JMixed1",XY_ENV$plot);
 
 ##Add shrubs
+  
+  
 
 Env_p1<-GAAR_ENV %>%
-  select(Veg_Plot,Tree:Water) %>% 
-  mutate(shrub = Tall_Shr+Mid_Tall+Low_Shru, 
-         subshrub = Dwarf_Sh) %>% 
-  select(-Tall_Shr:-Dwarf_Sh) %>% 
-  rename(plot = Veg_Plot, tree = Tree, gram = Graminoi, forb = Forbs, bryo = Bryophyt, lichen = Lichens, soil = Soil, duff = Duff, rock = Rock, water = Water, rock = Rock) %>% 
+  select(Veg_Plot,Tall_Shr:Dwarf_Sh, -Mid_Tall) %>% 
+  #mutate(shrub = Tall_Shr, 
+  #       subshrub = Dwarf_Sh+Low_Shru) %>% 
+  rename(plot = Veg_Plot,
+         #Shrub classes from https://irma.nps.gov/DataStore/Reference/Profile/2229705
+         tall_shrub = Tall_Shr, #>1.5m tall 
+         #midtall_shrub = Mid_Tall, #Above knee height .. old category from NPS
+         low_shrub = Low_Shru, # 0.2-1.5m tall
+         dwarf_shrub = Dwarf_Sh) %>% #, #<0.2m tall
+   inner_join(Env_use,by="plot") %>%
   select(plot, sort(colnames(.))) #%>% colnames()
-  
-Env_p2<-  XY_ENV %>% 
-  select(plot,tree:water) %>% #View()
-  select(plot, sort(colnames(.)))# %>%
+
+write_csv(Env_p1,"./Output/ARCN_GAAR_env_data_for_lichen_volume_cover_by_color_group_NAD83.csv")
+
+
+Env_p2<-  
+  XY_ENV %>% 
+  select(plot, shrub, subshrub) %>%
+  inner_join(Env, by="plot", keep=FALSE) %>% 
+  select(-grazing) %>%#colnames()
+  anti_join(Env_p1, by="plot") %>%
+  select(plot, sort(colnames(.))) #%>%
+  #dim
     #colnames()
+
+write_csv(Env_p2,"./Output/ARCN_nonGAAR_env_data_for_lichen_volume_cover_by_color_group_NAD83.csv")
+
 
 Env_full<-rbind(Env_p1, Env_p2)
 Env_full<- Env %>% select(plot) %>% inner_join(Env_full)
-write_csv(Env_full,"./Output/env_data_for_lichen_volume_cover_by_color_group_NAD83.csv")
+#Env_full$shrub<-ifelse(Env_full$shrub>100, 100, Env_full$shrub)
+#Env_full$subshrub<-ifelse(Env_full$subshrub>100, 100, Env_full$subshrub)
+
+write_csv(Env_full,"./Output/ARCN_env_data_harmonized_for_lichen_volume_cover_by_color_group_NAD83.csv")
 
 ##Select the plots and needed columns from both the Gates and other ARCN parks
 #tmp1<-WAH_ENV %>% 
